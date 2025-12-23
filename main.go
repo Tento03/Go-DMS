@@ -11,7 +11,7 @@ import (
 func main() {
 	config.LoadEnv()
 	config.ConnectDB()
-	config.DB.AutoMigrate(&models.User{})
+	config.DB.AutoMigrate(&models.User{}, &models.Refresh{})
 	r := gin.Default()
 	routes.UserRoutes(r)
 	r.Run(":8080")
