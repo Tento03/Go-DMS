@@ -12,4 +12,5 @@ func UserRoutes(r *gin.Engine) {
 	r.POST("/users", controllers.Create)
 	r.PUT("/users/:id", controllers.Update)
 	r.DELETE("/users/:id", controllers.Delete)
+	r.PATCH("/users/change-password/:id", controllers.ChangePassword)
 }
