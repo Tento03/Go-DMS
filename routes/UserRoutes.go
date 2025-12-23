@@ -16,4 +16,5 @@ func UserRoutes(r *gin.Engine) {
 	r.PATCH("/users/change-password/:id", controllers.ChangePassword)
 
 	r.POST("/auth/login", controllers.Login)
+	r.POST("/auth/refresh", controllers.RefreshToken)
 }

@@ -1,8 +1,14 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Refresh struct {
 	gorm.Model
-	RefreshToken string `json:"refreshToken"`
+	UserID       uint
+	RefreshToken string `gorm:"uniqueIndex"`
+	ExpiresAt    time.Time
 }
