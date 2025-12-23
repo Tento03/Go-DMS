@@ -75,6 +75,33 @@ func Delete(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "user deleted"})
 }
 
+func ResetPassword(c *gin.Context) {
+	var id = c.Param("id")
+	var user models.User
+	if err := config.DB.First(&user, id).Error; err != nil {
+		c.JSON(404, gin.H{"error": "user not found"})
+		return
+	}
+
+	var body struct {
+		NewPassword string `json:"newPassword"`
+	}
+	c.ShouldBindJSON(&body)
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 10)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "hashing failed"})
+		return
+	}
+	body.NewPassword = string(hashed)
+
+	if err := config.DB.Model(&user).UpdateColumn("password", &body.NewPassword).Error; err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message": "reset password success"})
+}
+
 func ChangePassword(c *gin.Context) {
 	var id = c.Param("id")
 	var user models.User
