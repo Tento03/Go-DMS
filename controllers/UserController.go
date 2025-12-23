@@ -3,7 +3,6 @@ package controllers
 import (
 	"go-dms/config"
 	"go-dms/models"
-	"go-dms/requests"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +29,7 @@ func GetById(c *gin.Context) {
 }
 
 func Create(c *gin.Context) {
-	var body requests.CreateUserRequest
+	var body models.User
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -38,72 +37,33 @@ func Create(c *gin.Context) {
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "failed to hash password"})
+		c.JSON(500, gin.H{"error": "hashed failed"})
 		return
 	}
+	body.Password = string(hashed)
 
-	user := models.User{
-		Name:      body.Name,
-		Email:     body.Email,
-		Username:  body.Username,
-		Password:  string(hashed),
-		Phone:     body.Phone,
-		Gender:    body.Gender,
-		Jabatan:   body.Jabatan,
-		BirthDate: body.BirthDate,
-	}
-
-	if err := config.DB.Create(&user).Error; err != nil {
+	if err := config.DB.Create(&body).Error; err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(201, gin.H{"message": "user created", "data": user})
+	c.JSON(201, gin.H{"message": "user created", "user": body})
 }
 
 func Update(c *gin.Context) {
 	var id = c.Param("id")
-	var body models.User
-	if err := config.DB.First(&body, id).Error; err != nil {
+	var user models.User
+	if err := config.DB.First(&user, id).Error; err != nil {
 		c.JSON(404, gin.H{"error": "user not found"})
 		return
 	}
 
-	var req requests.UpdateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var UpdatedUser models.User
+	c.ShouldBindJSON(&UpdatedUser)
+	if err := config.DB.Model(&user).Updates(UpdatedUser).Error; err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-
-	updates := map[string]interface{}{}
-
-	if req.Name != "" {
-		updates["name"] = req.Name
-	}
-	if req.Email != "" {
-		updates["email"] = req.Email
-	}
-	if req.Username != "" {
-		updates["username"] = req.Username
-	}
-	if req.Phone != "" {
-		updates["phone"] = req.Phone
-	}
-	if req.Gender != "" {
-		updates["gender"] = req.Gender
-	}
-	if req.Jabatan != "" {
-		updates["jabatan"] = req.Jabatan
-	}
-	if !req.BirthDate.IsZero() {
-		updates["birth_date"] = req.BirthDate
-	}
-
-	if err := config.DB.Model(&body).Updates(updates).Error; err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-	config.DB.First(&body, id)
-	c.JSON(200, gin.H{"message": "user updated", "data": body})
+	c.JSON(200, gin.H{"message": "user updated", "user": UpdatedUser})
 }
 
 func Delete(c *gin.Context) {
