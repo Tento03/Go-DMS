@@ -17,4 +17,5 @@ func UserRoutes(r *gin.Engine) {
 
 	r.POST("/auth/login", controllers.Login)
 	r.POST("/auth/refresh", controllers.RefreshToken)
+	r.POST("/auth/logout", controllers.Logout)
 }

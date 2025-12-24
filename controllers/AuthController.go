@@ -110,3 +110,21 @@ func RefreshToken(c *gin.Context) {
 	c.SetCookie("accessToken", newAccessString, 15*60, "/", "", true, true)
 	c.JSON(http.StatusOK, gin.H{"message": "access token refreshed"})
 }
+
+func Logout(c *gin.Context) {
+	refreshToken, err := c.Cookie("refreshToken")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "refresh token not found"})
+		return
+	}
+
+	now := time.Now()
+	if err := config.DB.Model(&models.Refresh{}).Where("refresh_token = ?", refreshToken).Update("revoked_at", &now).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to revoked token"})
+		return
+	}
+
+	c.SetCookie("accessToken", "", -1, "", "", true, true)
+	c.SetCookie("refreshToken", "", -1, "", "", true, true)
+	c.JSON(http.StatusOK, gin.H{"message": "logout successfull"})
+}
