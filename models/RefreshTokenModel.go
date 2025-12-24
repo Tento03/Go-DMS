@@ -8,7 +8,8 @@ import (
 
 type Refresh struct {
 	gorm.Model
-	UserID       uint
-	RefreshToken string `gorm:"uniqueIndex"`
+	UserID       uint   `json:"userId"`
+	RefreshToken string `json:"refreshToken" gorm:"uniqueIndex"`
 	ExpiresAt    time.Time
+	RevokedAt    time.Time
 }

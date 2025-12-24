@@ -32,7 +32,7 @@ func Login(c *gin.Context) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "password invalid"})
+		c.JSON(400, gin.H{"error": "password invalid"})
 		return
 	}
 
@@ -61,35 +61,32 @@ func Login(c *gin.Context) {
 	rt := models.Refresh{
 		UserID:       user.ID,
 		RefreshToken: refreshString,
-		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
+		RevokedAt:    time.Now().Add(24 * 7 * time.Hour),
 	}
 
 	if err := config.DB.Create(&rt).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save refresh token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save rt"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message":       "login berhasil",
-		"access_token":  accessString,
-		"refresh_token": refreshString,
-	})
+	c.SetCookie("accessToken", accessString, 15*60, "/", "", true, true)
+	c.SetCookie("refreshToken", refreshString, 7*24*60*60, "/", "", true, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "login successfull"})
 }
 
 func RefreshToken(c *gin.Context) {
-	var body struct {
-		RefreshToken string `json:"refreshToken"`
-	}
-
-	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	refreshToken, err := c.Cookie("refreshToken")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token not found"})
 		return
 	}
 
-	token, err := jwt.Parse(body.RefreshToken, func(t *jwt.Token) (any, error) {
+	token, err := jwt.Parse(refreshToken, func(t *jwt.Token) (any, error) {
 		return jwtSecret, nil
 	})
-	if err != nil || !token.Valid {
+
+	if !token.Valid || err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "token invalid"})
 		return
 	}
@@ -98,24 +95,18 @@ func RefreshToken(c *gin.Context) {
 	userId := uint(claims["id"].(float64))
 
 	var refresh models.Refresh
-	if err := config.DB.Where("user_id = ? AND refresh_token = ?", userId, body.RefreshToken).First(&refresh).Error; err != nil {
+	if err := config.DB.Where("user_id = ? AND refresh_token = ?", userId, refreshToken).First(&refresh).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token not found"})
 		return
 	}
 
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	newAccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       userId,
 		"username": claims["username"],
 		"exp":      time.Now().Add(15 * time.Minute).Unix(),
 	})
-	accessString, err := accessToken.SignedString(jwtSecret)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to sign access token"})
-		return
-	}
+	newAccessString, _ := newAccessToken.SignedString(jwtSecret)
 
-	c.JSON(http.StatusOK, gin.H{
-		"message":      "refresh success",
-		"access_token": accessString,
-	})
+	c.SetCookie("accessToken", newAccessString, 15*60, "/", "", true, true)
+	c.JSON(http.StatusOK, gin.H{"message": "access token refreshed"})
 }
