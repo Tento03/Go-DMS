@@ -3,6 +3,8 @@ package controllers
 import (
 	"go-dms/config"
 	"go-dms/models"
+	"go-dms/requests"
+	"go-dms/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -29,41 +31,57 @@ func GetById(c *gin.Context) {
 }
 
 func Create(c *gin.Context) {
-	var body models.User
-	if err := c.ShouldBindJSON(&body); err != nil {
+	var req requests.CreateUserRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"errors": utils.ValidationError(err)})
+		return
+	}
+
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
+
+	user := models.User{
+		Name:      req.Name,
+		Email:     req.Email,
+		Username:  req.Username,
+		Password:  string(hashed),
+		Role:      "USER",
+		Status:    1,
+		BirthDate: req.BirthDate,
+		Phone:     req.Phone,
+		Gender:    req.Gender,
+		Jabatan:   req.Jabatan,
+	}
+
+	if err := config.DB.Create(&user).Error; err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "hashed failed"})
-		return
-	}
-	body.Password = string(hashed)
-
-	if err := config.DB.Create(&body).Error; err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(201, gin.H{"message": "user created", "user": body})
+	c.JSON(201, gin.H{"message": "user created"})
 }
 
 func Update(c *gin.Context) {
-	var id = c.Param("id")
+	id := c.Param("id")
+
 	var user models.User
 	if err := config.DB.First(&user, id).Error; err != nil {
 		c.JSON(404, gin.H{"error": "user not found"})
 		return
 	}
 
-	var UpdatedUser models.User
-	c.ShouldBindJSON(&UpdatedUser)
-	if err := config.DB.Model(&user).Updates(UpdatedUser).Error; err != nil {
+	var req requests.UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"errors": utils.ValidationError(err)})
+		return
+	}
+
+	if err := config.DB.Model(&user).Updates(req).Error; err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"message": "user updated", "user": UpdatedUser})
+
+	c.JSON(200, gin.H{"message": "user updated"})
 }
 
 func Delete(c *gin.Context) {
@@ -76,7 +94,8 @@ func Delete(c *gin.Context) {
 }
 
 func ResetPassword(c *gin.Context) {
-	var id = c.Param("id")
+	id := c.Param("id")
+
 	var user models.User
 	if err := config.DB.First(&user, id).Error; err != nil {
 		c.JSON(404, gin.H{"error": "user not found"})
@@ -84,53 +103,53 @@ func ResetPassword(c *gin.Context) {
 	}
 
 	var body struct {
-		NewPassword string `json:"newPassword"`
+		NewPassword string `json:"newPassword" binding:"required,password"`
 	}
-	c.ShouldBindJSON(&body)
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 10)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "hashing failed"})
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(400, gin.H{"errors": utils.ValidationError(err)})
 		return
 	}
-	body.NewPassword = string(hashed)
 
-	if err := config.DB.Model(&user).UpdateColumn("password", &body.NewPassword).Error; err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{"message": "reset password success"})
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 12)
+
+	config.DB.Model(&user).
+		UpdateColumn("password", string(hashed))
+
+	c.JSON(200, gin.H{"message": "password reset success"})
 }
 
 func ChangePassword(c *gin.Context) {
-	var id = c.Param("id")
+	id := c.Param("id")
+
 	var user models.User
 	if err := config.DB.First(&user, id).Error; err != nil {
-		c.JSON(404, gin.H{"error": "user tidak ditemukan"})
+		c.JSON(404, gin.H{"error": "user not found"})
 		return
 	}
 
 	var body struct {
-		OldPassword string `json:"oldPassword"`
-		NewPassword string `json:"newPassword"`
+		OldPassword string `json:"oldPassword" binding:"required"`
+		NewPassword string `json:"newPassword" binding:"required,password"`
 	}
-	c.ShouldBindJSON(&body)
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.OldPassword)); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(400, gin.H{"errors": utils.ValidationError(err)})
 		return
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 10)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "hashed failed"})
+	if err := bcrypt.CompareHashAndPassword(
+		[]byte(user.Password),
+		[]byte(body.OldPassword),
+	); err != nil {
+		c.JSON(400, gin.H{"error": "old password wrong"})
 		return
 	}
 
-	body.NewPassword = string(hashed)
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 12)
 
-	if err := config.DB.Model(&user).UpdateColumn("password", body.NewPassword).Error; err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{"message": "update password berhasil"})
+	config.DB.Model(&user).
+		UpdateColumn("password", string(hashed))
+
+	c.JSON(200, gin.H{"message": "password changed"})
 }
