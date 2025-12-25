@@ -61,7 +61,8 @@ func Login(c *gin.Context) {
 	rt := models.Refresh{
 		UserID:       user.ID,
 		RefreshToken: refreshString,
-		RevokedAt:    time.Now().Add(24 * 7 * time.Hour),
+		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
+		RevokedAt:    nil,
 	}
 
 	if err := config.DB.Create(&rt).Error; err != nil {
@@ -95,7 +96,7 @@ func RefreshToken(c *gin.Context) {
 	userId := uint(claims["id"].(float64))
 
 	var refresh models.Refresh
-	if err := config.DB.Where("user_id = ? AND refresh_token = ?", userId, refreshToken).First(&refresh).Error; err != nil {
+	if err := config.DB.Where("user_id = ? AND refresh_token = ? AND revoked_at IS NULL", userId, refreshToken).First(&refresh).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token not found"})
 		return
 	}
