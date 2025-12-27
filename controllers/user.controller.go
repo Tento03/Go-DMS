@@ -21,13 +21,13 @@ func GetAll(c *gin.Context) {
 }
 
 func GetById(c *gin.Context) {
-	var id = c.Param("id")
+	id := c.Param("id")
 	var user models.User
 	if err := config.DB.First(&user, id).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "no user found"})
 		return
 	}
-	c.JSON(200, gin.H{"message": "user found", "data": user})
+	c.JSON(200, gin.H{"message": "user found", "user": user})
 }
 
 func Create(c *gin.Context) {
