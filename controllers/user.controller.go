@@ -14,10 +14,10 @@ import (
 func GetAll(c *gin.Context) {
 	var users []models.User
 	if err := config.DB.Find(&users).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "no users found"})
 		return
 	}
-	c.JSON(200, gin.H{"message": "users found", "data": users})
+	c.JSON(200, gin.H{"message": "users found", "user": users})
 }
 
 func GetById(c *gin.Context) {
