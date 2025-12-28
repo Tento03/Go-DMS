@@ -30,9 +30,9 @@ func LoginRateLimiter(maxAttempt int, window time.Duration) gin.HandlerFunc {
 		if count > int64(maxAttempt) {
 			ttl, _ := config.Client.TTL(config.Ctx, key).Result()
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-				"error":       "too many login attemps",
-				"retry_after": int(ttl.Seconds()),
-				"max_attemps": maxAttempt,
+				"error":        "too many login attempts",
+				"retry_after":  int(ttl.Seconds()),
+				"max_attempts": maxAttempt,
 			})
 			return
 		}
