@@ -71,8 +71,8 @@ func Login(c *gin.Context) {
 
 	secure := os.Getenv("APP_ENV") == "production"
 
-	c.SetCookie("accessString", accessString, 15*60, "/", "", secure, true)
-	c.SetCookie("refreshString", refreshString, 7*24*60*60, "/", "", secure, true)
+	c.SetCookie("accessToken", accessString, 15*60, "/", "", secure, true)
+	c.SetCookie("refreshToken", refreshString, 7*24*60*60, "/", "", secure, true)
 
 	c.JSON(200, gin.H{"message": "login success"})
 }
@@ -126,7 +126,9 @@ func Logout(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("accessToken", "", -1, "", "", true, true)
-	c.SetCookie("refreshToken", "", -1, "", "", true, true)
+	secure := os.Getenv("APP_ENV") == "production"
+
+	c.SetCookie("accessToken", "", -1, "/", "", secure, true)
+	c.SetCookie("refreshToken", "", -1, "/", "", secure, true)
 	c.JSON(http.StatusOK, gin.H{"message": "logout successfull"})
 }

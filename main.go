@@ -14,6 +14,7 @@ import (
 func main() {
 	config.LoadEnv()
 	config.ConnectDB()
+	config.InitRedis()
 	config.DB.AutoMigrate(&models.User{}, &models.Refresh{})
 	r := gin.Default()
 
@@ -22,6 +23,7 @@ func main() {
 		v.RegisterValidation("birthdate", validators.BirthDateValidator)
 	}
 	routes.UserRoutes(r)
+	routes.AuthRoutes(r)
 	r.Run(":8080")
 
 }
