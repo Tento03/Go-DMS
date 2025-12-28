@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"go-dms/config"
 	"go-dms/models"
 	"go-dms/requests"
@@ -24,7 +25,7 @@ func Login(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := config.DB.Where("username = ?", user.Username).First(&user).Error; err != nil {
+	if err := config.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
@@ -55,18 +56,23 @@ func Login(c *gin.Context) {
 	}
 
 	rt := models.Refresh{
-		ID:           user.ID,
+		UserID:       user.ID,
 		RefreshToken: refreshString,
 		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
 	}
 
 	if err := config.DB.Create(&rt).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to add refresh token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add refresh token"})
 		return
 	}
 
-	c.SetCookie("accesssString", accessString, 15*60, "/", "", true, true)
-	c.SetCookie("refreshString", refreshString, 7*24*60*60, "", "", true, true)
+	key := fmt.Sprintf("rl:login:%s", c.ClientIP())
+	config.Client.Del(config.Ctx, key)
+
+	secure := os.Getenv("APP_ENV") == "production"
+
+	c.SetCookie("accessString", accessString, 15*60, "/", "", secure, true)
+	c.SetCookie("refreshString", refreshString, 7*24*60*60, "/", "", secure, true)
 
 	c.JSON(200, gin.H{"message": "login success"})
 }
