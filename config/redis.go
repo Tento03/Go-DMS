@@ -19,8 +19,8 @@ func InitRedis() {
 	})
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		log.Fatal("Redix connection failed:", err)
+		log.Fatal("Redis connection failed:", err)
 	}
 
-	log.Println("Redix connected")
+	log.Println("Redis connected")
 }
