@@ -66,7 +66,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	key := fmt.Sprintf("rl:login:%s", c.ClientIP())
+	key := fmt.Sprintf("rl:login:%s:%s", c.ClientIP(), req.Username)
 	config.Client.Del(config.Ctx, key)
 
 	secure := os.Getenv("APP_ENV") == "production"
