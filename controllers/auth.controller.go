@@ -5,6 +5,7 @@ import (
 	"go-dms/config"
 	"go-dms/models"
 	"go-dms/requests"
+	"go-dms/utils"
 	"net/http"
 	"os"
 	"time"
@@ -93,7 +94,11 @@ func RefreshToken(c *gin.Context) {
 		return
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid claims"})
+		return
+	}
 	userId := uint(claims["id"].(float64))
 
 	var refresh models.Refresh
@@ -109,7 +114,12 @@ func RefreshToken(c *gin.Context) {
 	})
 	newAccessString, _ := newAccessToken.SignedString(jwtSecret)
 
-	c.SetCookie("accessToken", newAccessString, 15*60, "/", "", true, true)
+	hash := utils.HashToken(refreshToken)
+	key := fmt.Sprintf("login:refresh:%s:%s", c.ClientIP(), hash)
+	config.Client.Del(config.Ctx, key)
+
+	secure := os.Getenv("APP_ENV") == "production"
+	c.SetCookie("accessToken", newAccessString, 15*60, "/", "", secure, true)
 	c.JSON(http.StatusOK, gin.H{"message": "access token refreshed"})
 }
 

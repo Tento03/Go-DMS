@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"go-dms/config"
-	"go-dms/requests"
 	"go-dms/utils"
 	"net/http"
 	"time"
@@ -13,13 +12,8 @@ import (
 
 func LoginRateLimiter(maxAttempt int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
-		var req requests.Login
-		_ = c.ShouldBindJSON(&req)
-
 		ip := c.ClientIP()
-		username := req.Username
-		key := fmt.Sprintf("rl:login:%s:%s", ip, username)
+		key := fmt.Sprintf("rl:login:%s", ip)
 
 		count, err := config.Client.Incr(config.Ctx, key).Result()
 		if err != nil {
