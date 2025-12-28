@@ -101,11 +101,17 @@ func RefreshToken(c *gin.Context) {
 	}
 	userId := uint(claims["id"].(float64))
 
-	var refresh models.Refresh
-	if err := config.DB.Where("user_id = ? AND refresh_token = ? AND revoked_at IS NULL", userId, refreshToken).First(&refresh).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token not found"})
+	var old models.Refresh
+	if err := config.DB.Where("user_id = ? AND refresh_token = ? AND revoked_at IS NULL", userId, refreshToken).First(&old).Error; err != nil {
+		now := time.Now()
+		config.DB.Model(&models.Refresh{}).Where("user_id = ?", userId).UpdateColumn("revoked_at", &now)
+
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token invalid or reused"})
 		return
 	}
+
+	now := time.Now()
+	config.DB.Model(&old).Update("revoked_at", &now)
 
 	newAccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       userId,
@@ -114,13 +120,31 @@ func RefreshToken(c *gin.Context) {
 	})
 	newAccessString, _ := newAccessToken.SignedString(jwtSecret)
 
+	newRefreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":       userId,
+		"username": claims["username"],
+		"exp":      time.Now().Add(7 * 24 * time.Hour).Unix(),
+	})
+	newRefreshString, _ := newRefreshToken.SignedString(jwtSecret)
+
+	rt := models.Refresh{
+		UserID:       userId,
+		RefreshToken: newRefreshString,
+		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
+	}
+	if err := config.DB.Create(&rt).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	hash := utils.HashToken(refreshToken)
-	key := fmt.Sprintf("login:refresh:%s:%s", c.ClientIP(), hash)
+	key := fmt.Sprintf("rl:refresh:%s:%s", c.ClientIP(), hash)
 	config.Client.Del(config.Ctx, key)
 
 	secure := os.Getenv("APP_ENV") == "production"
 	c.SetCookie("accessToken", newAccessString, 15*60, "/", "", secure, true)
-	c.JSON(http.StatusOK, gin.H{"message": "access token refreshed"})
+	c.SetCookie("refreshToken", newRefreshString, 7*24*60*60, "/", "", secure, true)
+	c.JSON(http.StatusOK, gin.H{"message": "token refreshed"})
 }
 
 func Logout(c *gin.Context) {
