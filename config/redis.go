@@ -8,17 +8,18 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var ctx = context.Background()
+var Client *redis.Client
+var Ctx = context.Background()
 
 func InitRedis() {
-	client := redis.NewClient(&redis.Options{
+	Client = redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_ADDR"),
 		Password: "",
 		DB:       0,
 		Protocol: 2,
 	})
 
-	if err := client.Ping(ctx).Err(); err != nil {
+	if err := Client.Ping(Ctx).Err(); err != nil {
 		log.Fatal("Redis connection failed:", err)
 	}
 
