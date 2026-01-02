@@ -101,7 +101,7 @@ func Delete(c *gin.Context) {
 }
 
 func ResetPassword(c *gin.Context) {
-	id := c.Param("id")
+	var id = c.Param("id")
 
 	var user models.User
 	if err := config.DB.First(&user, id).Error; err != nil {
@@ -126,11 +126,11 @@ func ResetPassword(c *gin.Context) {
 }
 
 func ChangePassword(c *gin.Context) {
-	id := c.Param("id")
+	var id = c.Param("id")
 
 	var user models.User
 	if err := config.DB.First(&user, id).Error; err != nil {
-		c.JSON(404, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
@@ -140,22 +140,25 @@ func ChangePassword(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(400, gin.H{"errors": utils.ValidationError(err)})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": utils.ValidationError(err)})
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword(
-		[]byte(user.Password),
-		[]byte(body.OldPassword),
-	); err != nil {
-		c.JSON(400, gin.H{"error": "old password wrong"})
+	if err := bcrypt.CompareHashAndPassword([]byte(body.OldPassword), []byte(user.Password)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "old password wrong"})
 		return
 	}
 
-	hashed, _ := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 12)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 12)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash new password"})
+		return
+	}
 
-	config.DB.Model(&user).
-		UpdateColumn("password", string(hashed))
+	if err := config.DB.Model(&user).UpdateColumn("password", string(hashed)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		return
+	}
 
-	c.JSON(200, gin.H{"message": "password changed"})
+	c.JSON(http.StatusOK, gin.H{"message": "password changed"})
 }
