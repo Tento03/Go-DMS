@@ -72,7 +72,7 @@ func Update(c *gin.Context) {
 
 	var req requests.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": utils.ValidationError(err)})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": utils.ValidationError(err)})
 		return
 	}
 
