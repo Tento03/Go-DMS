@@ -21,18 +21,18 @@ func Login(c *gin.Context) {
 	var req requests.Login
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": utils.ValidationError(err)})
 		return
 	}
 
 	var user models.User
 	if err := config.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "password do not match"})
 		return
 	}
 
@@ -67,13 +67,12 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	key := fmt.Sprintf("rl:login:%s:%s", c.ClientIP(), req.Username)
-	config.Client.Del(config.Ctx, key)
+	keys := fmt.Sprintf("rl:login:%s", c.ClientIP())
+	config.Client.Del(config.Ctx, keys)
 
-	secure := os.Getenv("APP_ENV") == "production"
-
-	c.SetCookie("accessToken", accessString, 15*60, "/", "", secure, true)
-	c.SetCookie("refreshToken", refreshString, 7*24*60*60, "/", "", secure, true)
+	secured := os.Getenv("APP_ENV") == "production"
+	c.SetCookie("accessToken", accessString, 15*60, "/", "", secured, true)
+	c.SetCookie("refreshToken", refreshString, 7*24*60*60, "/", "", secured, true)
 
 	c.JSON(200, gin.H{"message": "login success"})
 }
