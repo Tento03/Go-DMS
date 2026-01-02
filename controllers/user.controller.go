@@ -66,22 +66,22 @@ func Update(c *gin.Context) {
 
 	var user models.User
 	if err := config.DB.First(&user, id).Error; err != nil {
-		c.JSON(404, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
 	var req requests.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"errors": utils.ValidationError(err)})
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": utils.ValidationError(err)})
 		return
 	}
 
 	if err := config.DB.Model(&user).Updates(req).Error; err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "user updated"})
+	c.JSON(http.StatusOK, gin.H{"message": "user updated"})
 }
 
 func Delete(c *gin.Context) {
