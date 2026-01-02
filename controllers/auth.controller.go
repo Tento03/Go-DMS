@@ -113,18 +113,24 @@ func RefreshToken(c *gin.Context) {
 	config.DB.Model(&old).Update("revoked_at", &now)
 
 	newAccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":       userId,
-		"username": claims["username"],
-		"exp":      time.Now().Add(15 * time.Minute).Unix(),
+		"id":  userId,
+		"exp": time.Now().Add(15 * time.Minute).Unix(),
 	})
-	newAccessString, _ := newAccessToken.SignedString(jwtSecret)
+	newAccessString, err := newAccessToken.SignedString(jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to signed new access token"})
+		return
+	}
 
 	newRefreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":       userId,
-		"username": claims["username"],
-		"exp":      time.Now().Add(7 * 24 * time.Hour).Unix(),
+		"id":  userId,
+		"exp": time.Now().Add(7 * 24 * time.Hour).Unix(),
 	})
-	newRefreshString, _ := newRefreshToken.SignedString(jwtSecret)
+	newRefreshString, err := newRefreshToken.SignedString(jwtSecret)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to signed new refresh token"})
+		return
+	}
 
 	rt := models.Refresh{
 		UserID:       userId,
@@ -132,17 +138,19 @@ func RefreshToken(c *gin.Context) {
 		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
 	}
 	if err := config.DB.Create(&rt).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add refresh token"})
 		return
 	}
 
-	hash := utils.HashToken(refreshToken)
-	key := fmt.Sprintf("rl:refresh:%s:%s", c.ClientIP(), hash)
-	config.Client.Del(config.Ctx, key)
+	ip := c.ClientIP()
+	hashedRT := utils.HashToken(refreshToken)
+	keys := fmt.Sprintf("rl:refresh:%s:%s", ip, hashedRT)
+	config.Client.Del(config.Ctx, keys)
 
-	secure := os.Getenv("APP_ENV") == "production"
-	c.SetCookie("accessToken", newAccessString, 15*60, "/", "", secure, true)
-	c.SetCookie("refreshToken", newRefreshString, 7*24*60*60, "/", "", secure, true)
+	secured := os.Getenv("APP_ENV") == "production"
+	c.SetCookie("accessToken", newAccessString, 15*60, "/", "", secured, true)
+	c.SetCookie("refreshToken", newRefreshString, 15*60, "/", "", secured, true)
+
 	c.JSON(http.StatusOK, gin.H{"message": "token refreshed"})
 }
 
