@@ -17,7 +17,7 @@ func GetAll(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no users found"})
 		return
 	}
-	c.JSON(200, gin.H{"message": "users found", "user": users})
+	c.JSON(http.StatusOK, gin.H{"message": "users found", "user": users})
 }
 
 func GetById(c *gin.Context) {
@@ -27,21 +27,21 @@ func GetById(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no user found"})
 		return
 	}
-	c.JSON(200, gin.H{"message": "user found", "user": user})
+	c.JSON(http.StatusOK, gin.H{"message": "user found", "user": user})
 }
 
 func Create(c *gin.Context) {
 	var req requests.CreateUserRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"errors": utils.ValidationError(err)})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": utils.ValidationError(err)})
 		return
 	}
 
 	hashed, _ := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
 
 	user := models.User{
-		Name:      req.Name,
+		Name:      req.Username,
 		Email:     req.Email,
 		Username:  req.Username,
 		Password:  string(hashed),
@@ -54,11 +54,11 @@ func Create(c *gin.Context) {
 	}
 
 	if err := config.DB.Create(&user).Error; err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add user"})
 		return
 	}
 
-	c.JSON(201, gin.H{"message": "user created"})
+	c.JSON(http.StatusCreated, gin.H{"message": "user created", "user": user})
 }
 
 func Update(c *gin.Context) {
