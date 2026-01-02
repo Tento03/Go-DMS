@@ -105,7 +105,7 @@ func ResetPassword(c *gin.Context) {
 
 	var user models.User
 	if err := config.DB.First(&user, id).Error; err != nil {
-		c.JSON(404, gin.H{"error": "user not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
@@ -114,16 +114,15 @@ func ResetPassword(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(400, gin.H{"errors": utils.ValidationError(err)})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": utils.ValidationError(err)})
 		return
 	}
 
 	hashed, _ := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 12)
 
-	config.DB.Model(&user).
-		UpdateColumn("password", string(hashed))
+	config.DB.Model(&user).Update("password", string(hashed))
 
-	c.JSON(200, gin.H{"message": "password reset success"})
+	c.JSON(http.StatusOK, gin.H{"message": "password reset successfully"})
 }
 
 func ChangePassword(c *gin.Context) {
