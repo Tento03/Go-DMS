@@ -4,14 +4,14 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	Name      string
-	Email     string `gorm:"unique"`
-	Username  string `gorm:"unique"`
-	Password  string
-	Role      string `gorm:"type:varchar(20);default:USER"`
-	Status    int    `gorm:"default:1"`
-	BirthDate string
-	Phone     string
-	Gender    string
-	Jabatan   string
+	Name      string `gorm:"not null"`
+	Email     string `gorm:"unique;not null"`
+	Username  string `gorm:"unique;not null"`
+	Password  string `gorm:"not null"`
+	Role      string `gorm:"type:varchar(20);default:USER;not null"`
+	Status    int    `gorm:"default:1;not null"`
+	BirthDate string `gorm:"not null"`
+	Phone     string `gorm:"not null"`
+	Gender    string `gorm:"not null"`
+	Jabatan   string `gorm:"not null"`
 }
