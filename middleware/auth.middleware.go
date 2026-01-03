@@ -13,8 +13,7 @@ var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 func RequireAuth(c *gin.Context) {
 	accessToken, err := c.Cookie("accessToken")
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "access token not found"})
-		c.Abort()
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "access token not found"})
 		return
 	}
 
@@ -23,13 +22,19 @@ func RequireAuth(c *gin.Context) {
 	})
 
 	if !token.Valid || err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "acces token invalid"})
-		c.Abort()
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token invalid"})
 		return
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
-	c.Set("userId", uint(claims["id"].(float64)))
-	c.Set("username", claims["username"])
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid claims"})
+		return
+	}
+	userId := uint(claims["id"].(float64))
+	username := claims["username"]
+
+	c.Set("userId", userId)
+	c.Set("username", username)
 	c.Next()
 }
