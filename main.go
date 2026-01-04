@@ -15,7 +15,7 @@ func main() {
 	config.LoadEnv()
 	config.ConnectDB()
 	config.InitRedis()
-	config.DB.AutoMigrate(&models.User{}, &models.Refresh{})
+	config.DB.AutoMigrate(&models.User{}, &models.Refresh{}, &models.Document{})
 	r := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -24,6 +24,7 @@ func main() {
 	}
 	routes.UserRoutes(r)
 	routes.AuthRoutes(r)
+	routes.DocumentRoutes(r)
 	r.Run(":8080")
 
 }
