@@ -17,7 +17,7 @@ import (
 func CreateDocument(c *gin.Context) {
 	//1. Bind JSON
 	var req requests.CreateDocumentRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
 		return
 	}
