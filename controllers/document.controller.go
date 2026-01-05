@@ -50,27 +50,24 @@ func GetDocumentById(c *gin.Context) {
 }
 
 func CreateDocument(c *gin.Context) {
-	//1. Bind JSON
+
 	var req requests.CreateDocumentRequest
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
 		return
 	}
 
-	//2. Ambil dari form
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
 		return
 	}
 
-	//3. Validasi ukuran file
 	if file.Size > 5<<20 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file size max 5mb"})
 		return
 	}
 
-	//4. Validasi extensi file
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	allowed := map[string][]string{
 		"pdf":   {".pdf"},
@@ -83,10 +80,8 @@ func CreateDocument(c *gin.Context) {
 		return
 	}
 
-	//5. Ambil UserId
 	userId := c.GetUint("userId")
 
-	//6. Generate nama file aman
 	filename := fmt.Sprintf(
 		"%d_%d%s",
 		userId,
@@ -96,13 +91,11 @@ func CreateDocument(c *gin.Context) {
 
 	path := filepath.Join("uploads", filename)
 
-	//7. Simpan file
 	if err := c.SaveUploadedFile(file, path); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
 		return
 	}
 
-	//8. Simpan ke DB
 	doc := models.Document{
 		UserID:      userId,
 		Title:       req.Title,
@@ -115,7 +108,6 @@ func CreateDocument(c *gin.Context) {
 		return
 	}
 
-	//9. Hasilkan response
 	c.JSON(http.StatusCreated, gin.H{"message": "document uploaded", "data": doc})
 }
 
@@ -167,7 +159,7 @@ func UpdateDocument(c *gin.Context) {
 		path := filepath.Join("uploads", filename)
 
 		if err := c.SaveUploadedFile(file, path); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to save file"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload file"})
 			return
 		}
 
