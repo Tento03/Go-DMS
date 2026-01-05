@@ -32,7 +32,19 @@ func GetDocumentById(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "failed to fetched document"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "document found", "data": doc})
+
+	docURL := fmt.Sprintf("%s/uploads/%s", c.Request.Host, filepath.Base(doc.Path))
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "document found",
+		"data": gin.H{
+			"id":          doc.ID,
+			"title":       doc.Title,
+			"description": doc.Description,
+			"type":        doc.Type,
+			"url":         "http://" + docURL,
+		},
+	})
 }
 
 func CreateDocument(c *gin.Context) {

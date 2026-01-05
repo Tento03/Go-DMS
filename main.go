@@ -17,6 +17,7 @@ func main() {
 	config.InitRedis()
 	config.DB.AutoMigrate(&models.User{}, &models.Refresh{}, &models.Document{})
 	r := gin.Default()
+	r.Static("/uploads", "./uploads")
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("password", validators.PasswordValidator)
