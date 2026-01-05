@@ -15,5 +15,6 @@ func DocumentRoutes(r *gin.Engine) {
 		doc.GET("/:id", controllers.GetById)
 		doc.POST("/", controllers.CreateDocument)
 		doc.PUT("/:id", controllers.UpdateDocument)
+		doc.DELETE("/:id", controllers.DeleteDocument)
 	}
 }
