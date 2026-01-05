@@ -12,6 +12,7 @@ func DocumentRoutes(r *gin.Engine) {
 	doc.Use(middleware.RequireAuth)
 	{
 		doc.GET("/", controllers.GetAll)
+		doc.GET("/:id", controllers.GetById)
 		doc.POST("/", controllers.CreateDocument)
 	}
 }
