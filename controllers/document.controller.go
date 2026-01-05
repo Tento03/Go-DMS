@@ -14,6 +14,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func GetDocument(c *gin.Context) {
+	var doc []models.Document
+	userId := c.GetUint("userId")
+	if err := config.DB.Where("user_id = ?", userId).First(&doc).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetched document"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "documents found", "data": doc})
+}
+
 func CreateDocument(c *gin.Context) {
 	//1. Bind JSON
 	var req requests.CreateDocumentRequest
