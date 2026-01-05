@@ -24,6 +24,17 @@ func GetDocument(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "documents found", "data": doc})
 }
 
+func GetDocumentById(c *gin.Context) {
+	var doc models.Document
+	docId := c.Param("id")
+	userId := c.GetUint("userId")
+	if err := config.DB.Where("user_id = ? AND id = ?", userId, docId).First(&doc).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "failed to fetched document"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "document found", "data": doc})
+}
+
 func CreateDocument(c *gin.Context) {
 	//1. Bind JSON
 	var req requests.CreateDocumentRequest
