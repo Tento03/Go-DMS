@@ -184,3 +184,20 @@ func UpdateDocument(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "document updated", "data": doc})
 }
+
+func DeleteDocument(c *gin.Context) {
+	docId := c.Param("id")
+	userId := c.GetUint("userId")
+
+	var doc models.Document
+	if err := config.DB.Where("user_id = ? AND id = ?", userId, docId).First(&doc).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "document not found"})
+		return
+	}
+
+	if err := config.DB.Delete(&doc).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete document"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "document deleted"})
+}
