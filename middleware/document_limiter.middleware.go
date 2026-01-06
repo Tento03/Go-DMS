@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateDocumentLimiter(maxAttempt int, window time.Duration) gin.HandlerFunc {
+func DocumentLimiter(maxAttempt int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		userId := c.GetUint("userId")

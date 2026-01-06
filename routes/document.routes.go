@@ -10,7 +10,7 @@ import (
 
 func DocumentRoutes(r *gin.Engine) {
 	doc := r.Group("/document")
-	doc.Use(middleware.RequireAuth, middleware.CreateDocumentLimiter(5, 2*time.Minute))
+	doc.Use(middleware.RequireAuth, middleware.DocumentLimiter(5, 2*time.Minute))
 	{
 		doc.GET("/", controllers.GetAll)
 		doc.GET("/:id", controllers.GetById)
