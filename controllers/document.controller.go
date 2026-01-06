@@ -50,7 +50,6 @@ func GetDocumentById(c *gin.Context) {
 }
 
 func CreateDocument(c *gin.Context) {
-
 	var req requests.CreateDocumentRequest
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
