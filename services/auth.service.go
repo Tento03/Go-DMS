@@ -10,6 +10,8 @@ import (
 )
 
 var ErrUsernameExist = errors.New("username is existed")
+var ErrUsernameNotFound = errors.New("username not found")
+var ErrInvalidCredentials = errors.New("password do not matched")
 
 func Register(username string, password string) (*models.Auth, error) {
 	exist, err := repository.IsUsernameExist(username)
@@ -36,4 +38,27 @@ func Register(username string, password string) (*models.Auth, error) {
 	}
 
 	return user, nil
+}
+
+func Login(username string, password string) (string, string, error) {
+	user, err := repository.FindByUsername(username)
+	if err != nil {
+		return "", "", ErrUsernameNotFound
+	}
+
+	if !utils.ComparePassword(user.Password, password) {
+		return "", "", ErrInvalidCredentials
+	}
+
+	accessToken, err := utils.GenerateAccessToken(user.UserID)
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken, err := utils.GenerateRefreshToken(user.UserID)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }
