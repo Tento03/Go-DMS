@@ -33,7 +33,7 @@ func GenerateRefreshToken(userId string) (string, error) {
 	return GenerateToken(userId, 7*24*time.Hour)
 }
 
-func ParseToken(tokenStr string) (*jwt.MapClaims, error) {
+func ParseToken(tokenStr string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -43,5 +43,11 @@ func ParseToken(tokenStr string) (*jwt.MapClaims, error) {
 	if !token.Valid || err != nil {
 		return nil, errors.New("invalid token")
 	}
-	return token.Claims.(*jwt.MapClaims), err
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid claims type")
+	}
+
+	return claims, nil
 }
