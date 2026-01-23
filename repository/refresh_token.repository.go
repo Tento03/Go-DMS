@@ -12,7 +12,7 @@ func SaveRefreshToken(refresh *models.Refresh) error {
 
 func FindValidRefreshToken(token string) (*models.Refresh, error) {
 	var refresh models.Refresh
-	err := config.DB.Model(&models.Refresh{}).Where("token = ? AND expires_at IS NULL", token).First(refresh).Error
+	err := config.DB.Model(&models.Refresh{}).Where("token = ? AND revoked_at IS NULL", token).First(&refresh).Error
 	return &refresh, err
 }
 

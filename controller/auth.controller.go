@@ -89,5 +89,9 @@ func Logout(c *gin.Context) {
 		return
 	}
 
+	secured := os.Getenv("APP_ENV") == "production"
+	c.SetCookie("accessToken", "", -1, "/", "", secured, true)
+	c.SetCookie("refreshToken", "", -1, "/", "", secured, true)
+
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "logout success"})
 }

@@ -11,5 +11,7 @@ func AuthRoutes(r *gin.Engine) {
 	{
 		auth.POST("/register", controller.Register)
 		auth.POST("/login", controller.Login)
+		auth.POST("/refresh", controller.Refresh)
+		auth.POST("/logout", controller.Logout)
 	}
 }

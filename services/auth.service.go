@@ -13,6 +13,7 @@ import (
 var ErrUsernameExist = errors.New("username is existed")
 var ErrUsernameNotFound = errors.New("username not found")
 var ErrInvalidCredentials = errors.New("password do not matched")
+var ErrRefreshReuse = errors.New("refresh token invalid or reuse")
 
 func Register(username string, password string) (*models.Auth, error) {
 	exist, err := repository.IsUsernameExist(username)
@@ -80,7 +81,7 @@ func Refresh(refreshToken string) (string, string, error) {
 
 	old, err := repository.FindValidRefreshToken(hashRT)
 	if err != nil {
-		return "", "", err
+		return "", "", ErrRefreshReuse
 	}
 
 	if err := repository.RevokeToken(old); err != nil {
