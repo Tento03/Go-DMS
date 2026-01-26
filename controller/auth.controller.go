@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"go-dms/infra"
 	"go-dms/requests"
 	"go-dms/services"
+	"go-dms/utils"
 	"net/http"
 	"os"
 
@@ -47,6 +49,8 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	_ = infra.ResetLogin(c.ClientIP())
+
 	secured := os.Getenv("APP_ENV") == "production"
 	c.SetCookie("accessToken", accessToken, 15*60, "/", "", secured, true)
 	c.SetCookie("refreshToken", refreshToken, 7*24*60*60, "/", "", secured, true)
@@ -58,17 +62,19 @@ func Login(c *gin.Context) {
 }
 
 func Refresh(c *gin.Context) {
-	refresh, err := c.Cookie("refreshToken")
+	refreshToken, err := c.Cookie("refreshToken")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token not found"})
 		return
 	}
 
-	newAccessToken, newRefreshToken, err := services.Refresh(refresh)
+	newAccessToken, newRefreshToken, err := services.Refresh(refreshToken)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
+
+	_ = infra.ResetRefreshToken(c.ClientIP(), utils.HashToken(refreshToken))
 
 	secured := os.Getenv("APP_ENV") == "production"
 	c.SetCookie("accessToken", newAccessToken, 15*60, "/", "", secured, true)
