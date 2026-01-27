@@ -10,8 +10,9 @@ import (
 
 func main() {
 	config.LoadEnv()
+	config.InitRedis()
 	config.ConnectDB()
-	config.DB.AutoMigrate(&models.Auth{}, &models.Refresh{})
+	config.DB.AutoMigrate(&models.Auth{}, &models.Refresh{}, &models.Document{})
 	r := gin.Default()
 	routes.AuthRoutes(r)
 	r.Run(":8080")
