@@ -5,15 +5,15 @@ import (
 	"go-dms/models"
 )
 
-func GetAllDocument() (*[]models.Document, error) {
+func GetAllDocuments() (*[]models.Document, error) {
 	var document []models.Document
 	err := config.DB.Model(&models.Document{}).Find(&document).Error
 	return &document, err
 }
 
-func GetByDocumentId() (*models.Document, error) {
+func GetByDocumentId(documentId string) (*models.Document, error) {
 	var document models.Document
-	err := config.DB.Model(&models.Document{}).First(&document).Error
+	err := config.DB.Model(&models.Document{}).Where("document_id = ?", documentId).First(&document).Error
 	return &document, err
 }
 
