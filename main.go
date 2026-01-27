@@ -15,5 +15,6 @@ func main() {
 	config.DB.AutoMigrate(&models.Auth{}, &models.Refresh{}, &models.Document{})
 	r := gin.Default()
 	routes.AuthRoutes(r)
+	routes.DocumentRoutes(r)
 	r.Run(":8080")
 }

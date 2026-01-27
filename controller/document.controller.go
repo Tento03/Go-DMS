@@ -45,7 +45,7 @@ func GetByDocumentId(c *gin.Context) {
 
 func CreateDocument(c *gin.Context) {
 	var req requests.DocumentRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -68,7 +68,7 @@ func CreateDocument(c *gin.Context) {
 		"docx": {".docx"},
 	}
 
-	if !slices.Contains(allowedType[ext], req.Type) {
+	if !slices.Contains(allowedType[req.Type], ext) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file type not allowed"})
 		return
 	}
@@ -104,7 +104,7 @@ func UpdateDocument(c *gin.Context) {
 	documentId := c.Param("id")
 
 	var req requests.DocumentRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -122,7 +122,7 @@ func UpdateDocument(c *gin.Context) {
 			"jpg":  {".jpg", ".jpeg"},
 			"docx": {".docx"},
 		}
-		if !slices.Contains(allowedType[ext], req.Type) {
+		if !slices.Contains(allowedType[req.Type], ext) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "file type not allowed"})
 			return
 		}
